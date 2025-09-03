@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Haryana Bus Tracker (Final Version)</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Final Professional CSS with new tab styles and animations */
+        :root { --primary-color: #4A90E2; --secondary-color: #50E3C2; --dark-text: #2c3e50; --light-text: #7f8c8d; --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: var(--bg-gradient); color: var(--dark-text); line-height: 1.6; min-height: 100vh; overflow: hidden; }
+        .container { max-width: 1600px; margin: 0 auto; padding: 20px; animation: fadeInUp 0.8s ease-out; }
+        .main-content { display: grid; grid-template-columns: 400px 1fr; gap: 20px; height: calc(100vh - 160px); }
+        .sidebar { background: #fdfdfd; backdrop-filter: blur(10px); border-radius: 15px; padding: 0; box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15); overflow: hidden; display: flex; flex-direction: column; animation: slideInLeft 0.8s ease-out; }
+        
+        /* New Tab System Styles */
+        .sidebar-tabs { display: flex; background: #f1f3f5; padding: 5px; flex-shrink: 0; }
+        .sidebar-tab-button { flex: 1; padding: 12px 10px; text-align: center; cursor: pointer; border: none; background: transparent; font-size: 14px; font-weight: 600; color: var(--light-text); position: relative; transition: all 0.3s ease; }
+        .sidebar-tab-button i { margin-right: 5px; }
+        .sidebar-tab-button.active { color: var(--primary-color); background: white; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .sidebar-panel-container { overflow-y: auto; flex-grow: 1; }
+        .sidebar-panel { padding: 20px; display: none; animation: fadeIn 0.5s ease; }
+        .sidebar-panel.active { display: block; }
+
+        /* Fare & Stand Info Styles */
+        .info-card { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 10px; padding: 15px; margin-top: 15px; }
+        .info-card h4 { color: var(--primary-color); margin-bottom: 10px; font-size: 1.1em; }
+        .info-card table { width: 100%; border-collapse: collapse; }
+        .info-card th, .info-card td { text-align: left; padding: 10px; border-bottom: 1px solid #dee2e6; }
+        .info-card th { font-weight: 600; color: #495057; }
+        .info-card ul { list-style: none; padding-left: 5px; } .info-card li { margin-bottom: 5px; }
+        
+        /* Bus Card Enhancements */
+        .bus-card { border-left: 5px solid var(--primary-color); border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s ease; background: #fff; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .bus-card:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 10px 20px rgba(74, 144, 226, 0.2); }
+        .bus-card.selected { border-left-color: #f39c12; background: #fffaf0; }
+        .bus-header { display: flex; justify-content: space-between; align-items: center; }
+        .bus-number { font-size: 17px; font-weight: 700; color: var(--dark-text); }
+        .bus-type { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; color: white; text-transform: uppercase; }
+        .bus-type.Ordinary { background-color: #3498db; } .bus-type.AC { background-color: #2ecc71; } .bus-type.Volvo { background-color: #e74c3c; }
+        .bus-details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+        .detail-item { font-size: 13px; color: #555; display: flex; align-items: center; }
+        .detail-item i { margin-right: 6px; width: 15px; text-align: center; color: var(--light-text); }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Keeping other essential styles and animations for brevity */
+        .bg-particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1; }
+        .particle { position: absolute; background: rgba(255, 255, 255, 0.1); border-radius: 50%; animation: float 6s ease-in-out infinite; } @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        header { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); padding: 25px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); animation: slideInDown 0.6s ease-out; } @keyframes slideInDown { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
+        .app-title { display: flex; align-items: center; gap: 15px; font-size: 28px; margin-bottom: 10px; color: var(--primary-color); font-weight: 700; }
+        .app-title i { animation: bounce 2s infinite; } @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-10px); } 60% { transform: translateY(-5px); } }
+        .subtitle { color: #666; font-size: 16px; margin-left: 43px; }
+        @keyframes slideInLeft { from { opacity: 0; transform: translateX(-50px); } to { opacity: 1; transform: translateX(0); } }
+        .search-tabs { display: flex; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #ddd; } .tab-button { padding: 10px 15px; cursor: pointer; border: none; background: transparent; font-size: 15px; font-weight: 600; color: #666; position: relative; transition: color 0.2s ease; } .tab-button.active { color: var(--primary-color); } .tab-button.active::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 3px; background: var(--primary-color); }
+        .nearby-btn { margin-left: auto; background: transparent; border: none; font-size: 18px; color: #666; cursor: pointer; padding: 0 10px; transition: color 0.2s ease, transform 0.2s ease; } .nearby-btn:hover { color: var(--primary-color); transform: scale(1.1); }
+        .search-panel { display: none; } .search-panel.active { display: block; } .input-group { margin-bottom: 15px; } .input-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #555; }
+        .input-group select, .input-group input { width: 100%; padding: 12px 15px; border: 2px solid #e1e5e9; border-radius: 12px; font-size: 14px; outline: none; transition: border-color 0.2s ease; }
+        .input-group select:focus, .input-group input:focus { border-color: var(--primary-color); }
+        .btn { background: linear-gradient(135deg, var(--primary-color), #50E3C2); color: white; border: none; padding: 12px 20px; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 600; width: 100%; margin-top: 10px; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(74, 144, 226, 0.4); }
+        .map-container { background: white; border-radius: 15px; overflow: hidden; position: relative; animation: slideInRight 0.8s ease-out; } @keyframes slideInRight { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
+        .map-overlay { position: absolute; bottom: 10px; left: 10px; background: rgba(255, 255, 255, 0.9); padding: 5px 12px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 1000; font-size: 13px; color: #333; display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
+        #map { width: 100%; height: 100%; min-height: 600px; }
+        .loading { display: flex; align-items: center; justify-content: center; height: 150px; flex-direction: column; gap: 15px; text-align: center; color: #666; }
+        .spinner { border: 3px solid #f3f3f3; border-top: 3px solid var(--primary-color); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; } @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .sidebar-panel-container::-webkit-scrollbar { width: 6px; } .sidebar-panel-container::-webkit-scrollbar-track { background: #f1f1f1; } .sidebar-panel-container::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+        .traffic-toggle { display: flex; align-items: center; } .traffic-toggle label { font-weight: 600; cursor: pointer; user-select: none; } .traffic-toggle input { margin-right: 5px; cursor: pointer; }
+        #stop-notification { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #28a745, #218838); color: white; padding: 15px 25px; border-radius: 50px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); z-index: 9999; font-size: 16px; font-weight: 600; display: none; animation: slideUpFadeIn 0.5s ease-out; } @keyframes slideUpFadeIn { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
+        .distance-label { background-color: rgba(0, 0, 0, 0.6); color: white; padding: 3px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; white-space: nowrap; transform: translate(-50%, -50%); }
+    </style>
+</head>
+<body>
+    <div id="stop-notification"></div>
+    <div class="bg-particles" id="particles"></div>
+    <div class="container">
+        <header>
+            <div class="app-title"><i class="fas fa-bus-alt"></i> Haryana Bus Tracker</div>
+            <div class="subtitle">Your Ultimate Live Tracking and Information Hub</div>
+        </header>
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="sidebar-tabs">
+                    <button id="tab-live" class="sidebar-tab-button active" onclick="switchSidebarTab('live')"><i class="fas fa-satellite-dish"></i> Live Tracking</button>
+                    <button id="tab-fare" class="sidebar-tab-button" onclick="switchSidebarTab('fare')"><i class="fas fa-rupee-sign"></i> Fare Calculator</button>
+                    <button id="tab-info" class="sidebar-tab-button" onclick="switchSidebarTab('info')"><i class="fas fa-info-circle"></i> Stand Info</button>
+                </div>
+                <div class="sidebar-panel-container">
+                    <div id="live-panel" class="sidebar-panel active">
+                        <div class="search-tabs">
+                            <button class="tab-button active" onclick="switchSearchTab('route')">By Route</button>
+                            <button class="tab-button" onclick="switchSearchTab('bus-number')">By Bus No.</button>
+                            <button class="nearby-btn" onclick="findNearbyStops()" title="Find Nearby Bus Stops"><i class="fas fa-location-arrow"></i></button>
+                        </div>
+                        <div id="route-panel" class="search-panel active">
+                            <div class="input-group"><label for="from-city">From</label><select id="from-city"></select></div>
+                            <div class="input-group"><label for="to-city">To</label><select id="to-city"></select></div>
+                        </div>
+                        <div id="bus-number-panel" class="search-panel">
+                            <div class="input-group"><label for="bus-number-input">Bus Number</label><input type="text" id="bus-number-input" placeholder="e.g., HR55A-1234"></div>
+                        </div>
+                        <button class="btn" id="search-btn" onclick="searchByRoute()"><i class="fas fa-search"></i> Find Buses</button>
+                        <div id="bus-list" class="bus-list" style="margin-top: 20px;"></div>
+                    </div>
+                    <div id="fare-panel" class="sidebar-panel">
+                        <h3>Fare Estimator</h3>
+                        <div class="input-group"><label for="fare-from-city">From</label><select id="fare-from-city"></select></div>
+                        <div class="input-group"><label for="fare-to-city">To</label><select id="fare-to-city"></select></div>
+                        <button class="btn" onclick="calculateFare()"><i class="fas fa-calculator"></i> Calculate Fare</button>
+                        <div id="fare-results-container" class="info-card" style="display:none; margin-top: 20px;"></div>
+                    </div>
+                    <div id="info-panel" class="sidebar-panel">
+                        <h3>Bus Stand Information</h3>
+                        <div class="input-group"><label for="stand-select-city">Select a Bus Stand</label><select id="stand-select-city"></select></div>
+                        <div id="stand-info-container" class="info-card" style="display:none;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="map-container">
+                <div id="map"></div>
+                <div class="map-overlay">
+                    <div id="update-indicator">Connecting...</div>
+                    <div class="traffic-toggle"><input type="checkbox" id="traffic-switch"><label for="traffic-switch">Show Traffic</label></div>
+                    <div id="eta-display" style="font-weight: bold;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // === Configuration & Global State ===
+        const API_BASE_URL = 'http://127.0.0.1:5000';
+        const POLLING_INTERVAL_MS = 4000;
+        let map, infoWindow, directionsService, distanceMatrixService, userLocationMarker;
+        let routeRenderers = [], stopMarkersOnMap = [], distanceLabels = [];
+        let icons = {}, liveBusesData = [], busMarkersOnMap = {};
+        let currentRouteKey = null, trafficLayer = null;
+        const CITIES = { chandigarh: "Chandigarh ISBT", gurgaon: "Gurgaon ISBT", ambala: "Ambala Cantt", hisar: "Hisar ISBT", rohtak: "Rohtak ISBT", faridabad: "Faridabad ISBT", karnal: "Karnal", sonipat: "Sonipat", panipat: "Panipat", delhi: "Delhi ISBT", sirsa: "Sirsa ISBT", jhajjar: "Jhajjar", fatehabad: "Fatehabad" };
+        
+        class DistanceLabel extends google.maps.OverlayView { constructor(p, t) { super(); this.position = p; this.text = t; this.div = null; this.setMap(map); } onAdd() { this.div = document.createElement('div'); this.div.className = 'distance-label'; this.div.textContent = this.text; this.getPanes().overlayMouseTarget.appendChild(this.div); } draw() { const pos = this.getProjection().fromLatLngToDivPixel(this.position); if (pos) { this.div.style.left = pos.x + 'px'; this.div.style.top = pos.y + 'px'; } } onRemove() { if (this.div) { this.div.parentNode.removeChild(this.div); this.div = null; } } setMap(m) { super.setMap(m); } }
+
+        // === Data Fetching & Updates ===
+        async function fetchLiveBusData() { try { const res = await fetch(`${API_BASE_URL}/get_live_buses`); if (!res.ok) throw new Error('Server Error'); liveBusesData = await res.json(); updateBusListAndMarkers(); document.getElementById('update-indicator').textContent = `Live @ ${new Date().toLocaleTimeString()}`; } catch (e) { document.getElementById('update-indicator').textContent = 'Connection Failed!'; } }
+        
+        function updateBusListAndMarkers() {
+            const busList = document.getElementById('bus-list');
+            let visibleBuses = currentRouteKey ? liveBusesData.filter(bus => bus.routeKey === currentRouteKey) : [];
+            
+            liveBusesData.forEach(bus => {
+                const pos = new google.maps.LatLng(bus.latitude, bus.longitude);
+                if (busMarkersOnMap[bus.id]) {
+                    const marker = busMarkersOnMap[bus.id]; marker.setPosition(pos); const icon = marker.getIcon(); icon.rotation = bus.bearing; marker.setIcon(icon); checkBusProximity(bus, pos);
+                } else {
+                    const marker = new google.maps.Marker({ position: pos, map, icon: { ...icons.bus, rotation: bus.bearing }, zIndex: 100 });
+                    marker.addListener('click', () => { infoWindow.setContent(`<div style="text-align:center;"><h4>${bus.number}</h4><p>${bus.status}</p></div>`); infoWindow.open(map, marker); });
+                    busMarkersOnMap[bus.id] = marker;
+                }
+                busMarkersOnMap[bus.id].setVisible(bus.routeKey === currentRouteKey);
+            });
+
+            if(document.getElementById('live-panel').classList.contains('active')) {
+                busList.innerHTML = '';
+                if (!currentRouteKey) busList.innerHTML = `<div class="loading"><span>Select a route to see live buses.</span></div>`;
+                else if (visibleBuses.length === 0) busList.innerHTML = `<div class="loading"><span>No live buses on this route. Waiting for updates...</span></div>`;
+                
+                visibleBuses.sort((a,b) => a.number.localeCompare(b.number)).forEach(bus => {
+                    const card = document.createElement('div'); card.className = 'bus-card'; const seatStatusIcon = getSeatStatusIcon(bus.seat_status);
+                    card.innerHTML = `<div class="bus-header"><div class="bus-number">${bus.number}</div><div class="bus-type ${bus.bus_type.split(' ')[0]}">${bus.bus_type}</div></div><div class="bus-details-grid"><div class="detail-item"><i class="fas fa-traffic-light"></i> ${bus.status}</div><div class="detail-item">${seatStatusIcon} ${bus.seat_status}</div></div><div class="detail-item" id="next-stop-${bus.id}"></div><div class="detail-item" id="eta-${bus.id}"><i class="fas fa-clock"></i> Calculating ETA...</div>`;
+                    card.addEventListener('mouseover', () => busMarkersOnMap[bus.id]?.setAnimation(google.maps.Animation.BOUNCE));
+                    card.addEventListener('mouseout', () => busMarkersOnMap[bus.id]?.setAnimation(null));
+                    card.addEventListener('click', () => { document.querySelectorAll('.bus-card').forEach(c => c.classList.remove('selected')); card.classList.add('selected'); if(busMarkersOnMap[bus.id]) { map.panTo(busMarkersOnMap[bus.id].getPosition()); map.setZoom(12); } });
+                    busList.appendChild(card);
+                    updateDynamicETA(bus); 
+                });
+            }
+        }
+        
+        async function updateDynamicETA(bus) {
+            if (!distanceMatrixService || !bus.route || bus.route.length === 0) return;
+            const busPos = new google.maps.LatLng(bus.latitude, bus.longitude); const destination = bus.route[bus.route.length - 1];
+            distanceMatrixService.getDistanceMatrix({ origins: [busPos], destinations: [destination], travelMode: 'DRIVING', drivingOptions: { departureTime: new Date(), trafficModel: 'best_guess' }}, (res, status) => {
+                const etaEl = document.getElementById(`eta-${bus.id}`); const nextStopEl = document.getElementById(`next-stop-${bus.id}`);
+                if (status === 'OK' && res.rows[0].elements[0].status === 'OK') { const duration = res.rows[0].elements[0].duration_in_traffic.text; if(etaEl) etaEl.innerHTML = `<i class="fas fa-flag-checkered"></i> ETA: <strong>${duration}</strong>`;
+                } else if(etaEl) etaEl.innerHTML = `<i class="fas fa-flag-checkered"></i> ETA N/A`;
+                if (bus.next_stop) { const distM = google.maps.geometry.spherical.computeDistanceBetween(busPos, new google.maps.LatLng(bus.next_stop.lat, bus.next_stop.lng)); if(nextStopEl) nextStopEl.innerHTML = `<i class="fas fa-map-marker-alt"></i> Next: ${bus.next_stop.name} (${(distM/1000).toFixed(1)} km)`; }
+            });
+        }
+        
+        async function searchByRoute() {
+            const fromCity = document.getElementById('from-city').value; const toCity = document.getElementById('to-city').value;
+            if (!fromCity || !toCity || fromCity === toCity) { alert("Please select two different cities."); return; }
+            currentRouteKey = `${fromCity}-${toCity}`;
+            try {
+                const res = await fetch(`${API_BASE_URL}/get_route_details?start=${fromCity}&end=${toCity}`);
+                if (!res.ok) { alert(`Route from ${CITIES[fromCity]} to ${CITIES[toCity]} is not available.`); clearMapAndBuses(); return; }
+                const data = await res.json(); drawMultipleRoutes(data.stops); updateBusListAndMarkers();
+            } catch (error) { alert('Error fetching route data.'); }
+        }
+
+        function drawMultipleRoutes(stops) {
+            if (stops.length < 2) return;
+            clearMapAndBuses(true); 
+            const origin = stops[0]; const destination = stops[stops.length - 1]; const waypoints = stops.slice(1, -1).map(s => ({ location: { lat: s.lat, lng: s.lng }}));
+            const request = { origin: { lat: origin.lat, lng: origin.lng }, destination: { lat: destination.lat, lng: destination.lng }, waypoints: waypoints, travelMode: 'DRIVING', provideRouteAlternatives: true };
+            directionsService.route(request, (result, status) => {
+                if (status == 'OK') {
+                    result.routes.forEach((route, i) => { const renderer = new google.maps.DirectionsRenderer({ map: map, directions: result, routeIndex: i, suppressMarkers: true, polylineOptions: { strokeColor: i === 0 ? '#4A90E2' : '#8e9aaf', strokeWeight: i === 0 ? 7 : 5, strokeOpacity: i === 0 ? 0.9 : 0.7 } }); routeRenderers.push(renderer); });
+                    let totalDuration = result.routes[0].legs.reduce((sum, leg) => sum + leg.duration.value, 0); const hours = Math.floor(totalDuration / 3600); const minutes = Math.round((totalDuration % 3600) / 60); document.getElementById('eta-display').textContent = `ETA: ${hours}h ${minutes}m`;
+                    stops.forEach((stop, index) => {
+                        let icon = (index === 0) ? icons.start : (index === stops.length - 1) ? icons.end : icons.stop;
+                        stopMarkersOnMap.push(new google.maps.Marker({ position: { lat: stop.lat, lng: stop.lng }, map, icon, title: stop.name, zIndex: 5 }));
+                        if (index < stops.length - 1) {
+                            const leg = result.routes[0].legs[index]; const midPoint = google.maps.geometry.spherical.interpolate(new google.maps.LatLng(stop.lat, stop.lng), new google.maps.LatLng(stops[index+1].lat, stops[index+1].lng), 0.5);
+                            distanceLabels.push(new DistanceLabel(midPoint, leg.distance.text));
+                        }
+                    });
+                } else { alert('Could not display directions: ' + status); }
+            });
+        }
+        
+        async function findNearbyStops() {
+            const busList = document.getElementById('bus-list'); busList.innerHTML = `<div class="loading"><div class="spinner"></div><span>Fetching your location...</span></div>`;
+            clearMapAndBuses(true);
+            if (!navigator.geolocation) { alert("Geolocation is not supported."); return; }
+            navigator.geolocation.getCurrentPosition(
+                async (pos) => {
+                    const { latitude, longitude } = pos.coords;
+                    busList.innerHTML = `<div class="loading"><div class="spinner"></div><span>Finding nearby stops...</span></div>`;
+                    if (userLocationMarker) userLocationMarker.setMap(null);
+                    userLocationMarker = new google.maps.Marker({ position: { lat: latitude, lng: longitude }, map, title: "You are here", icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#4285F4", fillOpacity: 1, strokeColor: "white", strokeWeight: 2 }, zIndex: 200 });
+                    map.panTo({ lat: latitude, lng: longitude }); map.setZoom(11);
+                    try {
+                        const res = await fetch(`${API_BASE_URL}/find_nearby_stops?lat=${latitude}&lon=${longitude}`);
+                        if (!res.ok) { busList.innerHTML = `<div class="loading"><span>Could not find stops.</span></div>`; return; }
+                        displayNearbyStops(await res.json());
+                    } catch (e) { busList.innerHTML = `<div class="loading"><span>Server connection error.</span></div>`; }
+                },
+                (e) => { let msg = "An unknown error occurred."; if (e.code === e.PERMISSION_DENIED) msg = "Location access denied."; alert(msg); busList.innerHTML = `<div class="loading"><span>Could not get location.</span></div>`; }
+            );
+        }
+
+        function displayNearbyStops(stops) {
+            const busList = document.getElementById('bus-list'); busList.innerHTML = '';
+            if (stops.length === 0) { busList.innerHTML = `<div class="loading"><span>No bus stops found near you.</span></div>`; return; }
+            busList.innerHTML = `<h3 style="padding: 0 0 10px 5px; color: #333;">Nearest Bus Stops:</h3>`;
+            stops.forEach(stop => {
+                stopMarkersOnMap.push(new google.maps.Marker({ position: { lat: stop.lat, lng: stop.lng }, map, icon: icons.stop, title: `${stop.name} (${stop.distance_km.toFixed(1)} km away)` }));
+                const card = document.createElement('div'); card.className = 'bus-card';
+                card.innerHTML = `<div class="bus-number">${stop.name}</div><div class="bus-distance" style="font-weight: 700;"><i class="fas fa-road"></i> ${stop.distance_km.toFixed(1)} km away</div>`;
+                card.addEventListener('click', () => { map.panTo({ lat: stop.lat, lng: stop.lng }); map.setZoom(14); });
+                busList.appendChild(card);
+            });
+        }
+        
+        async function calculateFare() {
+            const from = document.getElementById('fare-from-city').value; const to = document.getElementById('fare-to-city').value;
+            if (!from || !to || from === to) { alert("Please select two different cities."); return; }
+            const res = await fetch(`${API_BASE_URL}/calculate_fare?start=${from}&end=${to}`); const data = await res.json();
+            const cont = document.getElementById('fare-results-container'); cont.style.display = 'block';
+            cont.innerHTML = `<h4>Fares from ${CITIES[from]} to ${CITIES[to]} (~${data.distance_km} km)</h4><table><tr><th>Bus Type</th><th>Estimated Fare</th></tr><tr><td>Ordinary</td><td>₹ ${data.fares.Ordinary.toFixed(0)}</td></tr><tr><td>AC Express</td><td>₹ ${data.fares['AC Express'].toFixed(0)}</td></tr><tr><td>Volvo</td><td>₹ ${data.fares.Volvo.toFixed(0)}</td></tr></table>`;
+        }
+
+        async function getStandInfo() {
+            const city = document.getElementById('stand-select-city').value; if (!city) { document.getElementById('stand-info-container').style.display = 'none'; return; }
+            const res = await fetch(`${API_BASE_URL}/get_bus_stand_details?city=${city}`); const data = await res.json();
+            const cont = document.getElementById('stand-info-container'); cont.style.display = 'block';
+            let routesHtml = data.routes.map(r => `<li><i class="fas fa-route" style="color: #ccc; margin-right: 5px;"></i>${r}</li>`).join('');
+            cont.innerHTML = `<h4>${data.name}</h4><p><strong>Facilities:</strong> ${data.facilities}</p><p><strong>Major Routes:</strong></p><ul>${routesHtml}</ul>`;
+        }
+        
+        function clearMapAndBuses(keepBusesHidden = false) {
+            routeRenderers.forEach(r => r.setMap(null)); routeRenderers = []; stopMarkersOnMap.forEach(m => m.setMap(null)); stopMarkersOnMap = []; distanceLabels.forEach(l => l.setMap(null)); distanceLabels = [];
+            if(userLocationMarker) { userLocationMarker.setMap(null); userLocationMarker = null; }
+            document.getElementById('eta-display').textContent = '';
+            if (!keepBusesHidden) { currentRouteKey = null; updateBusListAndMarkers(); }
+        }
+
+        function populateDropdowns() { const allDropdowns = ['from-city', 'to-city', 'fare-from-city', 'fare-to-city', 'stand-select-city']; allDropdowns.forEach(id => { const select = document.getElementById(id); if (id === 'stand-select-city') select.add(new Option('Select a City...', '')); Object.keys(CITIES).sort((a,b)=>CITIES[a].localeCompare(CITIES[b])).forEach(key => select.add(new Option(CITIES[key], key))); }); }
+        
+        function switchSidebarTab(tabName) { document.querySelectorAll('.sidebar-tab-button, .sidebar-panel').forEach(el => el.classList.remove('active')); document.getElementById(`tab-${tabName}`).classList.add('active'); document.getElementById(`${tabName}-panel`).classList.add('active'); }
+        
+        function switchSearchTab(tabName) { document.querySelectorAll('.search-tabs .tab-button, .search-panel').forEach(el => el.classList.remove('active')); document.querySelector(`.search-tabs .tab-button[onclick="switchSearchTab('${tabName}')"]`).classList.add('active'); document.getElementById(`${tabName}-panel`).classList.add('active'); const searchBtn = document.getElementById('search-btn'); searchBtn.innerHTML = tabName === 'route' ? '<i class="fas fa-search"></i> Find Buses' : '<i class="fas fa-crosshairs"></i> Track Bus'; searchBtn.onclick = tabName === 'route' ? searchByRoute : searchByBusNumber; if(tabName !== 'route') { clearMapAndBuses(true); document.getElementById('bus-list').innerHTML = ''; } else clearMapAndBuses(false); }
+        
+        async function searchByBusNumber() { 
+            const busNum = document.getElementById('bus-number-input').value.trim().toUpperCase().replace(/-/g, ''); if (!busNum) return;
+            const foundBus = liveBusesData.find(b => b.number.replace(/-/g, '') === busNum);
+            if(foundBus) {
+                switchSidebarTab('live'); switchSearchTab('route'); currentRouteKey = foundBus.routeKey;
+                const [from, to] = currentRouteKey.split('-');
+                document.getElementById('from-city').value = from; document.getElementById('to-city').value = to;
+                try {
+                    const res = await fetch(`${API_BASE_URL}/get_route_details?start=${from}&end=${to}`);
+                    const data = await res.json(); drawMultipleRoutes(data.stops); updateBusListAndMarkers();
+                } catch (error) {}
+                setTimeout(() => { const marker = busMarkersOnMap[foundBus.id]; if(marker) { map.panTo(marker.getPosition()); map.setZoom(14); google.maps.event.trigger(marker, 'click'); } }, 500);
+            } else { alert("This bus is not currently live. Please check the number and try again."); }
+        }
+
+        const notifiedStops = {}; function checkBusProximity(bus, pos) { if(!stopMarkersOnMap) return; for (const stopMarker of stopMarkersOnMap) { const distance = google.maps.geometry.spherical.computeDistanceBetween(pos, stopMarker.getPosition()); const notificationKey = `${bus.id}-${stopMarker.getTitle()}`; if (distance < 500 && !notifiedStops[notificationKey]) { showStopNotification(`${bus.number} is arriving at ${stopMarker.getTitle()}`); notifiedStops[notificationKey] = true; setTimeout(() => { delete notifiedStops[notificationKey]; }, 120000); break; } } }
+        function showStopNotification(msg) { const el = document.getElementById('stop-notification'); el.textContent = msg; el.style.display = 'block'; setTimeout(() => { el.style.display = 'none'; }, 4000); }
+        function createParticles() { const cont = document.getElementById('particles'); for (let i = 0; i < 20; i++) { const p = document.createElement('div'); p.className = 'particle'; const size = Math.random() * 4 + 2; p.style.width = `${size}px`; p.style.height = `${size}px`; p.style.left = `${Math.random() * 100}%`; p.style.top = `${Math.random() * 100}%`; p.style.animationDelay = `${Math.random() * 6}s`; p.style.animationDuration = `${Math.random() * 3 + 3}s`; cont.appendChild(p); } }
+        function getSeatStatusIcon(status) { if (status === 'Seats Available') return '<i class="fas fa-chair" style="color: #27ae60;"></i>'; if (status === 'Filling Fast') return '<i class="fas fa-chair" style="color: #f39c12;"></i>'; return '<i class="fas fa-chair" style="color: #e74c3c;"></i>'; }
+        
+        function initMap() {
+            map = new google.maps.Map(document.getElementById('map'), { center: { lat: 29.0588, lng: 76.0856 }, zoom: 8, mapTypeControl: false, streetViewControl: false, styles: [ { "featureType": "poi.business", "stylers": [ { "visibility": "off" } ] }, { "featureType": "poi.park", "elementType": "labels.text", "stylers": [ { "visibility": "off" } ] } ] });
+            infoWindow = new google.maps.InfoWindow();
+            directionsService = new google.maps.DirectionsService();
+            distanceMatrixService = new google.maps.DistanceMatrixService();
+            trafficLayer = new google.maps.TrafficLayer();
+            document.getElementById('traffic-switch').addEventListener('change', (e) => trafficLayer.setMap(e.target.checked ? map : null));
+            icons = { 
+                bus: { path: 'M20.5 4C21.3 4 22 4.7 22 5.5V18.5C22 19.3 21.3 20 20.5 20H19V21.1C19 21.6 18.6 22 18 22H16C15.4 22 15 21.6 15 21.1V20H9V21.1C9 21.6 8.6 22 8 22H6C5.4 22 5 21.6 5 21.1V20H3.5C2.7 20 2 19.3 2 18.5V5.5C2 4.7 2.7 4 3.5 4H20.5M19 16V8H5V16H19M17 18.5C17.8 18.5 18.5 17.8 18.5 17C18.5 16.2 17.8 15.5 17 15.5C16.2 15.5 15.5 16.2 15.5 17C15.5 17.8 16.2 18.5 17 18.5M7 18.5C7.8 18.5 8.5 17.8 8.5 17C8.5 16.2 7.8 15.5 7 15.5C6.2 15.5 5.5 16.2 5.5 17C5.5 17.8 6.2 18.5 7 18.5Z', fillColor: '#d35400', fillOpacity: 1, strokeColor: 'white', strokeWeight: 1, scale: 1.1, anchor: new google.maps.Point(12, 12)},
+                start: { url: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png', scaledSize: new google.maps.Size(40, 40) },
+                end: { url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png', scaledSize: new google.maps.Size(40, 40) },
+                stop: { url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png', scaledSize: new google.maps.Size(32, 32) }
+            };
+            populateDropdowns(); createParticles(); fetchLiveBusData(); setInterval(fetchLiveBusData, POLLING_INTERVAL_MS);
+        }
+    </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAqFb_0TMh3ptL2FpIMDqjhk9i-Ps2Zhpg&libraries=geometry,places&callback=initMap"></script>
+</body>
+</html>
+
