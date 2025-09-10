@@ -1,0 +1,1560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yatra Saarthi - Live Bus Tracking</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAqFb_0TMh3ptL2FpIMDqjhk9i-Ps2Zhpg&libraries=places,geometry"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Enhanced animated background */
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        }
+
+        .floating-shapes {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .shape {
+            position: absolute;
+            opacity: 0.1;
+            animation: float 20s infinite linear;
+        }
+
+        .shape:nth-child(1) { left: 10%; animation-delay: 0s; }
+        .shape:nth-child(2) { left: 20%; animation-delay: 2s; }
+        .shape:nth-child(3) { left: 30%; animation-delay: 4s; }
+        .shape:nth-child(4) { left: 40%; animation-delay: 6s; }
+        .shape:nth-child(5) { left: 50%; animation-delay: 8s; }
+        .shape:nth-child(6) { left: 60%; animation-delay: 10s; }
+        .shape:nth-child(7) { left: 70%; animation-delay: 12s; }
+        .shape:nth-child(8) { left: 80%; animation-delay: 14s; }
+
+        @keyframes float {
+            0% { transform: translateY(100vh) rotate(0deg); }
+            100% { transform: translateY(-100px) rotate(360deg); }
+        }
+
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            animation: particleFloat 8s ease-in-out infinite;
+        }
+
+        @keyframes particleFloat {
+            0%, 100% { transform: translateY(0px) translateX(0px); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100px) translateX(50px); opacity: 0; }
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+            z-index: 2;
+        }
+
+        .sidebar {
+            width: 420px;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 0 25px 25px 0;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+            animation: slideInLeft 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        @keyframes slideInLeft {
+            from { 
+                transform: translateX(-100%) scale(0.9); 
+                opacity: 0; 
+            }
+            to { 
+                transform: translateX(0) scale(1); 
+                opacity: 1; 
+            }
+        }
+
+        .header {
+            padding: 25px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 0 25px 0 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            opacity: 0.95;
+            font-size: 14px;
+            font-weight: 500;
+            position: relative;
+            z-index: 1;
+        }
+
+        .tabs {
+            display: flex;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            border-radius: 0 0 20px 20px;
+            padding: 5px;
+            margin: 0 10px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            font-weight: 700;
+            font-size: 11px;
+            border: none;
+            background: none;
+            color: #667eea;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tab::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.5s;
+        }
+
+        .tab:hover::before {
+            left: 100%;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .tab:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.8);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-content {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeInUp 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        @keyframes fadeInUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(30px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        .sub-tabs {
+            display: flex;
+            margin-bottom: 25px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
+            border-radius: 15px;
+            padding: 6px;
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .sub-tab {
+            flex: 1;
+            padding: 12px 8px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            font-size: 12px;
+            font-weight: 600;
+            border: none;
+            background: none;
+            color: #667eea;
+        }
+
+        .sub-tab.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.25);
+            transform: scale(1.02);
+        }
+
+        .search-section {
+            margin-bottom: 25px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid rgba(102, 126, 234, 0.15);
+            border-radius: 15px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+            background: white;
+        }
+
+        .nearby-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nearby-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .nearby-btn:hover::before {
+            left: 100%;
+        }
+
+        .nearby-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+        }
+
+        .nearby-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .bus-list {
+            margin-top: 25px;
+        }
+
+        .bus-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9));
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            cursor: pointer;
+            border-left: 5px solid #667eea;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+            animation: slideInUp 0.6s ease-out;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .bus-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .bus-card:hover::before {
+            opacity: 1;
+        }
+
+        .bus-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+            border-left-color: #764ba2;
+        }
+
+        .bus-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .bus-number {
+            font-weight: 800;
+            font-size: 18px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .bus-type {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 700;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .bus-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4CAF50;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+        }
+
+        .status-dot.delayed {
+            background: #FF9800;
+            box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
+        }
+
+        .eta-info {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            padding: 15px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+            position: relative;
+            z-index: 1;
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .eta-info div {
+            margin-bottom: 5px;
+        }
+
+        .eta-info div:last-child {
+            margin-bottom: 0;
+        }
+
+        .map-container {
+            flex: 1;
+            position: relative;
+            border-radius: 25px 0 0 25px;
+            overflow: hidden;
+            animation: slideInRight 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        @keyframes slideInRight {
+            from { 
+                transform: translateX(100%) scale(0.9); 
+                opacity: 0; 
+            }
+            to { 
+                transform: translateX(0) scale(1); 
+                opacity: 1; 
+            }
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .map-overlay {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .map-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .map-btn {
+            padding: 10px 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .map-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .fare-calculator {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .fare-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .fare-input-group label {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 13px;
+        }
+
+        .calculate-btn {
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .calculate-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+        }
+
+        .fare-result {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9));
+            backdrop-filter: blur(15px);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .stand-info {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .stand-photos {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stand-photo {
+            width: 100%;
+            height: 100px;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .stand-photo:hover {
+            transform: scale(1.05);
+        }
+
+        .stand-details {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9));
+            backdrop-filter: blur(15px);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 30px;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 4px solid rgba(102, 126, 234, 0.2);
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Enhanced scrollbar */
+        .tab-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .tab-content::-webkit-scrollbar-track {
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px;
+        }
+
+        .tab-content::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 10px;
+        }
+
+        .tab-content::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #764ba2, #667eea);
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: 60vh;
+                border-radius: 0 0 25px 25px;
+            }
+            
+            .map-container {
+                height: 40vh;
+                border-radius: 25px 25px 0 0;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .tab {
+                font-size: 10px;
+                padding: 12px 6px;
+            }
+        }
+
+        /* Live tracking indicator */
+        .live-indicator {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(76, 175, 80, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Enhanced bus route visualization */
+        .route-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: none;
+        }
+
+        .route-info.active {
+            display: block;
+            animation: slideInUp 0.5s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="animated-bg">
+        <div class="floating-shapes">
+            <div class="shape">🚌</div>
+            <div class="shape">🗺️</div>
+            <div class="shape">📍</div>
+            <div class="shape">🚌</div>
+            <div class="shape">⏰</div>
+            <div class="shape">🛣️</div>
+            <div class="shape">🚌</div>
+            <div class="shape">📱</div>
+        </div>
+        <div class="particles" id="particles"></div>
+    </div>
+    
+    <div class="container">
+        <div class="sidebar">
+            <div class="header">
+                <h1>🚌 Yatra Saarthi</h1>
+                <p>Advanced Live Bus Tracking System</p>
+            </div>
+            
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('live-tracking')">Live Tracking</button>
+                <button class="tab" onclick="switchTab('fare-calculator')">Fare Calculator</button>
+                <button class="tab" onclick="switchTab('stand-info')">Stand Info</button>
+            </div>
+            
+            <!-- Live Tracking Tab -->
+            <div class="tab-content active" id="live-tracking">
+                <div class="sub-tabs">
+                    <button class="sub-tab active" onclick="switchSubTab('route-search')">Search by Route</button>
+                    <button class="sub-tab" onclick="switchSubTab('bus-search')">Search by Bus</button>
+                </div>
+                
+                <div class="sub-tab-content active" id="route-search">
+                    <div class="search-section">
+                        <input type="text" class="search-input" placeholder="Enter route (e.g., Delhi to Mumbai)" id="route-input">
+                        <button class="nearby-btn" onclick="findNearbyStops()">
+                            📍 Find Nearby Stops
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="sub-tab-content" id="bus-search">
+                    <div class="search-section">
+                        <input type="text" class="search-input" placeholder="Enter bus number (e.g., DL01AB1234)" id="bus-input">
+                    </div>
+                </div>
+                
+                <div class="bus-list" id="bus-list">
+                    <!-- Bus cards will be populated here -->
+                </div>
+            </div>
+            
+            <!-- Fare Calculator Tab -->
+            <div class="tab-content" id="fare-calculator">
+                <div class="fare-calculator">
+                    <div class="fare-input-group">
+                        <label>From City</label>
+                        <input type="text" class="search-input" placeholder="Enter departure city" id="from-city">
+                    </div>
+                    <div class="fare-input-group">
+                        <label>To City</label>
+                        <input type="text" class="search-input" placeholder="Enter destination city" id="to-city">
+                    </div>
+                    <button class="calculate-btn" onclick="calculateFare()">Calculate Fare</button>
+                    <div class="fare-result" id="fare-result" style="display: none;">
+                        <!-- Fare results will be shown here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stand Info Tab -->
+            <div class="tab-content" id="stand-info">
+                <div class="stand-info">
+                    <div class="loading">
+                        <p>Click on any bus stop marker on the map to view detailed information about that location.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="map-container">
+            <div class="live-indicator">
+                <div class="live-dot"></div>
+                LIVE TRACKING
+            </div>
+            
+            <div class="map-overlay">
+                <div class="map-controls">
+                    <button class="map-btn" onclick="toggleTraffic()">🚦 Traffic</button>
+                    <button class="map-btn" onclick="toggleSatellite()">🛰️ Satellite</button>
+                    <button class="map-btn" onclick="centerMap()">🎯 Center</button>
+                </div>
+            </div>
+            
+            <div id="map"></div>
+            
+            <div class="route-info" id="route-info">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong id="route-name">Route Information</strong>
+                        <div id="route-details" style="font-size: 12px; color: #666; margin-top: 5px;"></div>
+                    </div>
+                    <button onclick="hideRouteInfo()" style="background: none; border: none; font-size: 18px; cursor: pointer;">×</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let map;
+        let directionsService;
+        let directionsRenderer;
+        let placesService;
+        let busMarkers = [];
+        let stopMarkers = [];
+        let currentRoute = null;
+        let trafficLayer;
+        let isTrafficVisible = false;
+        let isSatelliteView = false;
+        
+        // Enhanced sample bus data
+        const sampleBuses = [
+            {
+                id: 'DL01AB1234',
+                number: 'DL01AB1234',
+                type: 'AC Volvo',
+                route: 'Delhi to Mumbai',
+                status: 'On Time',
+                seats: 28,
+                totalSeats: 45,
+                lat: 28.6139,
+                lng: 77.2090,
+                bearing: 180,
+                nextStop: 'Connaught Place',
+                distanceToNext: '2.3 km',
+                etaToDestination: '18h 45m',
+                speed: 65
+            },
+            {
+                id: 'DL02CD5678',
+                number: 'DL02CD5678',
+                type: 'Non-AC',
+                route: 'Delhi to Mumbai',
+                status: 'Delayed',
+                seats: 15,
+                totalSeats: 40,
+                lat: 28.5355,
+                lng: 77.3910,
+                bearing: 225,
+                nextStop: 'Noida Sector 18',
+                distanceToNext: '1.8 km',
+                etaToDestination: '19h 20m',
+                speed: 45
+            },
+            {
+                id: 'MH01EF9012',
+                number: 'MH01EF9012',
+                type: 'Sleeper AC',
+                route: 'Mumbai to Delhi',
+                status: 'On Time',
+                seats: 22,
+                totalSeats: 35,
+                lat: 19.0760,
+                lng: 72.8777,
+                bearing: 45,
+                nextStop: 'Bandra Kurla Complex',
+                distanceToNext: '3.1 km',
+                etaToDestination: '17h 30m',
+                speed: 70
+            },
+            {
+                id: 'KA03GH3456',
+                number: 'KA03GH3456',
+                type: 'AC Volvo',
+                route: 'Bangalore to Chennai',
+                status: 'On Time',
+                seats: 31,
+                totalSeats: 45,
+                lat: 12.9716,
+                lng: 77.5946,
+                bearing: 120,
+                nextStop: 'Electronic City',
+                distanceToNext: '4.2 km',
+                etaToDestination: '6h 15m',
+                speed: 80
+            },
+            {
+                id: 'TN05IJ7890',
+                number: 'TN05IJ7890',
+                type: 'Non-AC',
+                route: 'Chennai to Bangalore',
+                status: 'On Time',
+                seats: 18,
+                totalSeats: 40,
+                lat: 13.0827,
+                lng: 80.2707,
+                bearing: 270,
+                nextStop: 'Tambaram',
+                distanceToNext: '2.7 km',
+                etaToDestination: '5h 45m',
+                speed: 55
+            }
+        ];
+
+        // Enhanced route data
+        const routeData = {
+            'Delhi to Mumbai': {
+                stops: [
+                    { name: 'ISBT Kashmere Gate', lat: 28.6692, lng: 77.2265 },
+                    { name: 'Connaught Place', lat: 28.6315, lng: 77.2167 },
+                    { name: 'Gurgaon Bus Stand', lat: 28.4595, lng: 77.0266 },
+                    { name: 'Jaipur Central', lat: 26.9124, lng: 75.7873 },
+                    { name: 'Udaipur Bus Stand', lat: 24.5854, lng: 73.7125 },
+                    { name: 'Ahmedabad GSRTC', lat: 23.0225, lng: 72.5714 },
+                    { name: 'Mumbai Central', lat: 19.0176, lng: 72.8562 }
+                ],
+                distance: '1,424 km',
+                duration: '18-20 hours'
+            },
+            'Bangalore to Chennai': {
+                stops: [
+                    { name: 'Majestic Bus Stand', lat: 12.9767, lng: 77.5993 },
+                    { name: 'Electronic City', lat: 12.8456, lng: 77.6603 },
+                    { name: 'Hosur Bus Stand', lat: 12.7409, lng: 77.8253 },
+                    { name: 'Krishnagiri', lat: 12.5186, lng: 78.2137 },
+                    { name: 'Vellore Bus Stand', lat: 12.9165, lng: 79.1325 },
+                    { name: 'Chennai CMBT', lat: 13.0827, lng: 80.2707 }
+                ],
+                distance: '347 km',
+                duration: '6-7 hours'
+            }
+        };
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 6,
+                center: { lat: 20.5937, lng: 78.9629 },
+                styles: [
+                    {
+                        featureType: 'all',
+                        elementType: 'geometry.fill',
+                        stylers: [{ color: '#f8f9fa' }]
+                    },
+                    {
+                        featureType: 'water',
+                        elementType: 'geometry',
+                        stylers: [{ color: '#e3f2fd' }]
+                    },
+                    {
+                        featureType: 'road',
+                        elementType: 'geometry',
+                        stylers: [{ color: '#ffffff' }]
+                    },
+                    {
+                        featureType: 'road.highway',
+                        elementType: 'geometry',
+                        stylers: [{ color: '#667eea' }]
+                    }
+                ],
+                mapTypeControl: false,
+                streetViewControl: false,
+                fullscreenControl: false
+            });
+
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer({
+                suppressMarkers: true,
+                polylineOptions: {
+                    strokeColor: '#667eea',
+                    strokeWeight: 6,
+                    strokeOpacity: 0.8
+                }
+            });
+            directionsRenderer.setMap(map);
+            placesService = new google.maps.places.PlacesService(map);
+            
+            trafficLayer = new google.maps.TrafficLayer();
+
+            // Initialize with sample data
+            displayBusesForRoute('Delhi to Mumbai');
+            
+            // Set up real-time updates
+            setInterval(updateBusPositions, 3000);
+        }
+
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            for (let i = 0; i < 100; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 8 + 's';
+                particle.style.animationDuration = (Math.random() * 4 + 4) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        function switchSubTab(subTabName) {
+            document.querySelectorAll('.sub-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.sub-tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(subTabName).classList.add('active');
+        }
+
+        function displayBusesForRoute(route) {
+            const busList = document.getElementById('bus-list');
+            const routeBuses = sampleBuses.filter(bus => bus.route === route);
+            
+            busList.innerHTML = '';
+            
+            routeBuses.forEach((bus, index) => {
+                setTimeout(() => {
+                    const busCard = createBusCard(bus);
+                    busList.appendChild(busCard);
+                }, index * 100);
+            });
+
+            if (routeData[route]) {
+                showRouteOnMap(routeData[route]);
+                addBusMarkersToMap(routeBuses);
+                showRouteInfo(route, routeData[route]);
+            }
+        }
+
+        function createBusCard(bus) {
+            const card = document.createElement('div');
+            card.className = 'bus-card';
+            card.onclick = () => focusOnBus(bus);
+            
+            const seatPercentage = Math.round((bus.seats / bus.totalSeats) * 100);
+            const statusClass = bus.status === 'On Time' ? '' : 'delayed';
+            
+            card.innerHTML = `
+                <div class="bus-header">
+                    <div class="bus-number">${bus.number}</div>
+                    <div class="bus-type">${bus.type}</div>
+                </div>
+                <div class="bus-info">
+                    <div class="status">
+                        <div class="status-dot ${statusClass}"></div>
+                        <span>${bus.status}</span>
+                    </div>
+                    <div>🪑 ${bus.seats}/${bus.totalSeats} seats</div>
+                </div>
+                <div class="eta-info">
+                    <div><strong>Next Stop:</strong> ${bus.nextStop} (${bus.distanceToNext})</div>
+                    <div><strong>ETA to Destination:</strong> ${bus.etaToDestination}</div>
+                    <div><strong>Current Speed:</strong> ${bus.speed} km/h</div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        function showRouteOnMap(routeInfo) {
+            const stops = routeInfo.stops;
+            
+            // Clear existing markers
+            stopMarkers.forEach(marker => marker.setMap(null));
+            stopMarkers = [];
+
+            if (stops.length < 2) return;
+
+            const waypoints = stops.slice(1, -1).map(stop => ({
+                location: { lat: stop.lat, lng: stop.lng },
+                stopover: true
+            }));
+
+            const request = {
+                origin: { lat: stops[0].lat, lng: stops[0].lng },
+                destination: { lat: stops[stops.length - 1].lat, lng: stops[stops.length - 1].lng },
+                waypoints: waypoints,
+                travelMode: google.maps.TravelMode.DRIVING
+            };
+
+            directionsService.route(request, (result, status) => {
+                if (status === 'OK') {
+                    directionsRenderer.setDirections(result);
+                    
+                    // Add enhanced custom markers for stops
+                    stops.forEach((stop, index) => {
+                        let markerColor = '#2196F3';
+                        let markerSize = 12;
+                        if (index === 0) { markerColor = '#4CAF50'; markerSize = 16; }
+                        if (index === stops.length - 1) { markerColor = '#F44336'; markerSize = 16; }
+
+                        const marker = new google.maps.Marker({
+                            position: { lat: stop.lat, lng: stop.lng },
+                            map: map,
+                            title: stop.name,
+                            icon: {
+                                path: google.maps.SymbolPath.CIRCLE,
+                                scale: markerSize,
+                                fillColor: markerColor,
+                                fillOpacity: 1,
+                                strokeColor: 'white',
+                                strokeWeight: 3
+                            },
+                            animation: google.maps.Animation.DROP
+                        });
+
+                        // Enhanced info window
+                        const infoWindow = new google.maps.InfoWindow({
+                            content: `
+                                <div style="padding: 15px; font-family: 'Inter', sans-serif;">
+                                    <h3 style="margin: 0 0 10px 0; color: #667eea;">${stop.name}</h3>
+                                    <p style="margin: 5px 0; color: #666;">Stop ${index + 1} of ${stops.length}</p>
+                                    <button onclick="showStandInfo({name: '${stop.name}', lat: ${stop.lat}, lng: ${stop.lng}})" 
+                                            style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; margin-top: 10px;">
+                                        View Details
+                                    </button>
+                                </div>
+                            `
+                        });
+
+                        marker.addListener('click', () => {
+                            infoWindow.open(map, marker);
+                        });
+
+                        stopMarkers.push(marker);
+                    });
+                }
+            });
+        }
+
+        function addBusMarkersToMap(buses) {
+            // Clear existing bus markers
+            busMarkers.forEach(marker => marker.setMap(null));
+            busMarkers = [];
+
+            buses.forEach((bus, index) => {
+                setTimeout(() => {
+                    const busIcon = {
+                        url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+                            <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="busGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+                                <circle cx="20" cy="20" r="18" fill="white" stroke="url(#busGradient)" stroke-width="2"/>
+                                <text x="20" y="26" text-anchor="middle" font-family="Arial" font-size="16" fill="url(#busGradient)">🚌</text>
+                            </svg>
+                        `)}`,
+                        scaledSize: new google.maps.Size(40, 40),
+                        anchor: new google.maps.Point(20, 20)
+                    };
+
+                    const marker = new google.maps.Marker({
+                        position: { lat: bus.lat, lng: bus.lng },
+                        map: map,
+                        title: `Bus ${bus.number}`,
+                        icon: busIcon,
+                        animation: google.maps.Animation.DROP
+                    });
+
+                    const infoWindow = new google.maps.InfoWindow({
+                        content: `
+                            <div style="padding: 15px; font-family: 'Inter', sans-serif; min-width: 200px;">
+                                <h3 style="margin: 0 0 10px 0; color: #667eea;">${bus.number}</h3>
+                                <div style="display: flex; justify-content: space-between; margin: 8px 0;">
+                                    <span><strong>Type:</strong></span>
+                                    <span>${bus.type}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin: 8px 0;">
+                                    <span><strong>Status:</strong></span>
+                                    <span style="color: ${bus.status === 'On Time' ? '#4CAF50' : '#FF9800'}">${bus.status}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin: 8px 0;">
+                                    <span><strong>Seats:</strong></span>
+                                    <span>${bus.seats}/${bus.totalSeats}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin: 8px 0;">
+                                    <span><strong>Speed:</strong></span>
+                                    <span>${bus.speed} km/h</span>
+                                </div>
+                                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
+                                    <div><strong>Next Stop:</strong> ${bus.nextStop}</div>
+                                    <div><strong>Distance:</strong> ${bus.distanceToNext}</div>
+                                </div>
+                            </div>
+                        `
+                    });
+
+                    marker.addListener('click', () => {
+                        infoWindow.open(map, marker);
+                    });
+
+                    busMarkers.push(marker);
+                }, index * 200);
+            });
+        }
+
+        function focusOnBus(bus) {
+            map.setCenter({ lat: bus.lat, lng: bus.lng });
+            map.setZoom(16);
+            
+            const busMarker = busMarkers.find(marker => 
+                marker.getTitle() === `Bus ${bus.number}`
+            );
+            if (busMarker) {
+                google.maps.event.trigger(busMarker, 'click');
+            }
+        }
+
+        function updateBusPositions() {
+            sampleBuses.forEach((bus, index) => {
+                // More realistic movement simulation
+                const moveDistance = 0.0005; // Smaller, more realistic movement
+                const angle = bus.bearing * Math.PI / 180;
+                
+                bus.lat += Math.cos(angle) * moveDistance + (Math.random() - 0.5) * 0.0001;
+                bus.lng += Math.sin(angle) * moveDistance + (Math.random() - 0.5) * 0.0001;
+                
+                // Slight bearing changes
+                bus.bearing = (bus.bearing + Math.random() * 6 - 3) % 360;
+                if (bus.bearing < 0) bus.bearing += 360;
+                
+                // Update speed realistically
+                bus.speed = Math.max(30, Math.min(90, bus.speed + Math.random() * 10 - 5));
+                
+                // Update ETA and distance
+                const etaMinutes = Math.floor(Math.random() * 60) + 300;
+                const hours = Math.floor(etaMinutes / 60);
+                const minutes = etaMinutes % 60;
+                bus.etaToDestination = `${hours}h ${minutes}m`;
+                
+                bus.distanceToNext = (Math.random() * 5 + 0.5).toFixed(1) + ' km';
+            });
+
+            // Smooth marker updates
+            busMarkers.forEach((marker, index) => {
+                if (sampleBuses[index]) {
+                    const bus = sampleBuses[index];
+                    const newPosition = { lat: bus.lat, lng: bus.lng };
+                    
+                    // Animate marker movement
+                    animateMarker(marker, newPosition);
+                }
+            });
+
+            // Update bus cards if live tracking tab is active
+            const liveTrackingTab = document.getElementById('live-tracking');
+            if (liveTrackingTab.classList.contains('active')) {
+                const routeInput = document.getElementById('route-input').value;
+                if (routeInput && routeData[routeInput]) {
+                    const busList = document.getElementById('bus-list');
+                    const routeBuses = sampleBuses.filter(bus => bus.route === routeInput);
+                    
+                    // Update existing cards instead of recreating
+                    const existingCards = busList.querySelectorAll('.bus-card');
+                    existingCards.forEach((card, index) => {
+                        if (routeBuses[index]) {
+                            updateBusCard(card, routeBuses[index]);
+                        }
+                    });
+                }
+            }
+        }
+
+        function animateMarker(marker, newPosition) {
+            const currentPosition = marker.getPosition();
+            const steps = 20;
+            let step = 0;
+            
+            const latStep = (newPosition.lat - currentPosition.lat()) / steps;
+            const lngStep = (newPosition.lng - currentPosition.lng()) / steps;
+            
+            const animate = () => {
+                if (step < steps) {
+                    const lat = currentPosition.lat() + (latStep * step);
+                    const lng = currentPosition.lng() + (lngStep * step);
+                    marker.setPosition({ lat, lng });
+                    step++;
+                    setTimeout(animate, 50);
+                }
+            };
+            
+            animate();
+        }
+
+        function updateBusCard(card, bus) {
+            const etaInfo = card.querySelector('.eta-info');
+            if (etaInfo) {
+                etaInfo.innerHTML = `
+                    <div><strong>Next Stop:</strong> ${bus.nextStop} (${bus.distanceToNext})</div>
+                    <div><strong>ETA to Destination:</strong> ${bus.etaToDestination}</div>
+                    <div><strong>Current Speed:</strong> ${bus.speed} km/h</div>
+                `;
+            }
+        }
+
+        function findNearbyStops() {
+            if (navigator.geolocation) {
+                const busList = document.getElementById('bus-list');
+                busList.innerHTML = `
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Getting your location...</p>
+                    </div>
+                `;
+                
+                navigator.geolocation.getCurrentPosition((position) => {
+                    const userLat = position.coords.latitude;
+                    const userLng = position.coords.longitude;
+                    
+                    let nearestStops = [];
+                    Object.values(routeData).forEach(route => {
+                        route.stops.forEach(stop => {
+                            const distance = calculateDistance(userLat, userLng, stop.lat, stop.lng);
+                            nearestStops.push({ ...stop, distance });
+                        });
+                    });
+                    
+                    nearestStops.sort((a, b) => a.distance - b.distance);
+                    nearestStops = nearestStops.slice(0, 5);
+                    
+                    busList.innerHTML = '<h3 style="color: #667eea; margin-bottom: 20px; font-weight: 800;">📍 Nearby Bus Stops</h3>';
+                    
+                    nearestStops.forEach((stop, index) => {
+                        setTimeout(() => {
+                            const stopCard = document.createElement('div');
+                            stopCard.className = 'bus-card';
+                            stopCard.innerHTML = `
+                                <div class="bus-header">
+                                    <div class="bus-number">${stop.name}</div>
+                                    <div class="bus-type">${stop.distance.toFixed(1)} km</div>
+                                </div>
+                                <div class="bus-info">
+                                    <div>📍 Distance from your location</div>
+                                    <div>🚶‍♂️ ${Math.round(stop.distance * 12)} min walk</div>
+                                </div>
+                            `;
+                            stopCard.onclick = () => {
+                                map.setCenter({ lat: stop.lat, lng: stop.lng });
+                                map.setZoom(16);
+                            };
+                            busList.appendChild(stopCard);
+                        }, index * 150);
+                    });
+                    
+                }, (error) => {
+                    busList.innerHTML = `
+                        <div class="loading">
+                            <p style="color: #FF9800;">Unable to get your location. Please enable location services and try again.</p>
+                        </div>
+                    `;
+                });
+            } else {
+                alert('Geolocation is not supported by this browser.');
+            }
+        }
+
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLng/2) * Math.sin(dLng/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        function calculateFare() {
+            const fromCity = document.getElementById('from-city').value;
+            const toCity = document.getElementById('to-city').value;
+            
+            if (!fromCity || !toCity) {
+                alert('Please enter both cities');
+                return;
+            }
+            
+            const distance = Math.random() * 1000 + 100;
+            const baseFare = distance * 0.8;
+            
+            const fares = {
+                'Non-AC': Math.round(baseFare),
+                'AC': Math.round(baseFare * 1.5),
+                'Volvo AC': Math.round(baseFare * 2),
+                'Sleeper AC': Math.round(baseFare * 2.5)
+            };
+            
+            const fareResult = document.getElementById('fare-result');
+            fareResult.style.display = 'block';
+            fareResult.innerHTML = `
+                <h3 style="color: #667eea; margin-bottom: 15px; font-weight: 800;">💰 Estimated Fares</h3>
+                <div style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1)); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
+                    <p><strong>Route:</strong> ${fromCity} ➜ ${toCity}</p>
+                    <p><strong>Distance:</strong> ~${Math.round(distance)} km</p>
+                </div>
+                ${Object.entries(fares).map(([type, fare]) => 
+                    `<div style="display: flex; justify-content: space-between; align-items: center; margin: 12px 0; padding: 10px; background: rgba(255,255,255,0.7); border-radius: 10px;">
+                        <span style="font-weight: 600;">${type}:</span>
+                        <strong style="color: #667eea; font-size: 16px;">₹${fare}</strong>
+                    </div>`
+                ).join('')}
+            `;
+        }
+
+        function showStandInfo(stop) {
+            switchTab('stand-info');
+            
+            const standInfoContent = document.querySelector('#stand-info .stand-info');
+            standInfoContent.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading detailed information for ${stop.name}...</p>
+                </div>
+            `;
+            
+            setTimeout(() => {
+                standInfoContent.innerHTML = `
+                    <div class="stand-photos">
+                        <div style="background: linear-gradient(45deg, #667eea, #764ba2); height: 120px; border-radius: 15px; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 600;">Bus Terminal View</div>
+                        <div style="background: linear-gradient(45deg, #764ba2, #667eea); height: 120px; border-radius: 15px; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 600;">Waiting Area</div>
+                        <div style="background: linear-gradient(45deg, #667eea, #f093fb); height: 120px; border-radius: 15px; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 600;">Facilities</div>
+                        <div style="background: linear-gradient(45deg, #f093fb, #764ba2); height: 120px; border-radius: 15px; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 600;">Food Court</div>
+                    </div>
+                    <div class="stand-details">
+                        <h3 style="color: #667eea; margin-bottom: 15px; font-weight: 800;">🚏 ${stop.name}</h3>
+                        <div style="margin-bottom: 10px;"><strong>📍 Address:</strong> ${stop.name} Bus Terminal, India</div>
+                        <div style="margin-bottom: 10px;"><strong>⭐ Rating:</strong> ⭐⭐⭐⭐ 4.2/5 (1,247 reviews)</div>
+                        <div style="margin-bottom: 15px;"><strong>🏢 Facilities:</strong> Waiting Area, Restrooms, Food Court, WiFi, Charging Points</div>
+                        <hr style="margin: 20px 0; border: none; border-top: 2px solid rgba(102, 126, 234, 0.1);">
+                        <h4 style="color: #667eea; margin-bottom: 12px; font-weight: 700;">🗺️ Nearby Places</h4>
+                        <div style="display: grid; gap: 8px;">
+                            <div style="display: flex; justify-content: space-between; padding: 8px; background: rgba(102, 126, 234, 0.05); border-radius: 8px;">
+                                <span>🏨 Hotel Grand Plaza</span>
+                                <span style="color: #667eea; font-weight: 600;">0.5 km</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 8px; background: rgba(102, 126, 234, 0.05); border-radius: 8px;">
+                                <span>🍽️ Food Junction</span>
+                                <span style="color: #667eea; font-weight: 600;">0.2 km</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 8px; background: rgba(102, 126, 234, 0.05); border-radius: 8px;">
+                                <span>⛽ Fuel Station</span>
+                                <span style="color: #667eea; font-weight: 600;">0.3 km</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 8px; background: rgba(102, 126, 234, 0.05); border-radius: 8px;">
+                                <span>🏥 City Hospital</span>
+                                <span style="color: #667eea; font-weight: 600;">1.2 km</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }, 2000);
+        }
+
+        function showRouteInfo(routeName, routeInfo) {
+            const routeInfoDiv = document.getElementById('route-info');
+            const routeNameSpan = document.getElementById('route-name');
+            const routeDetailsDiv = document.getElementById('route-details');
+            
+            routeNameSpan.textContent = routeName;
+            routeDetailsDiv.innerHTML = `
+                📏 ${routeInfo.distance} • ⏱️ ${routeInfo.duration} • 🚏 ${routeInfo.stops.length} stops
+            `;
+            
+            routeInfoDiv.classList.add('active');
+        }
+
+        function hideRouteInfo() {
+            document.getElementById('route-info').classList.remove('active');
+        }
+
+        function toggleTraffic() {
+            if (isTrafficVisible) {
+                trafficLayer.setMap(null);
+                isTrafficVisible = false;
+            } else {
+                trafficLayer.setMap(map);
+                isTrafficVisible = true;
+            }
+        }
+
+        function toggleSatellite() {
+            if (isSatelliteView) {
+                map.setMapTypeId('roadmap');
+                isSatelliteView = false;
+            } else {
+                map.setMapTypeId('satellite');
+                isSatelliteView = true;
+            }
+        }
+
+        function centerMap() {
+            map.setCenter({ lat: 20.5937, lng: 78.9629 });
+            map.setZoom(6);
+        }
+
+        // Enhanced event listeners
+        document.getElementById('route-input').addEventListener('input', (e) => {
+            const route = e.target.value;
+            if (routeData[route]) {
+                displayBusesForRoute(route);
+            } else if (route.length === 0) {
+                document.getElementById('bus-list').innerHTML = '';
+                hideRouteInfo();
+            }
+        });
+
+        document.getElementById('bus-input').addEventListener('input', (e) => {
+            const busNumber = e.target.value.toUpperCase();
+            const bus = sampleBuses.find(b => b.number.includes(busNumber));
+            
+            const busList = document.getElementById('bus-list');
+            if (bus && busNumber.length > 3) {
+                busList.innerHTML = '';
+                const busCard = createBusCard(bus);
+                busList.appendChild(busCard);
+                focusOnBus(bus);
+            } else if (busNumber.length === 0) {
+                busList.innerHTML = '';
+            }
+        });
+
+        // Initialize everything
+        window.onload = function() {
+            createParticles();
+            initMap();
+        };
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97a52b50d3c4918a',t:'MTc1NzA2OTQ2My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
